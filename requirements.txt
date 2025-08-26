@@ -15,3 +15,4 @@ mypy>=1.14.1  # Проверка типов
 # Optional performance dependencies
 uvloop>=0.21.0  # Более быстрый event loop для asyncio (Unix/macOS)
 orjson>=3.10.15  # Быстрая работа с JSON
+psutil>=6.1.0  # Мониторинг системных ресурсов
