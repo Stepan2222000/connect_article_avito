@@ -24,6 +24,7 @@ MIN_ARTICLE_LEN_ALPHANUM = int(os.getenv("MIN_ARTICLE_LEN_ALPHANUM", "4"))  # М
 
 # Пути
 CSV_DICTIONARY_PATH = os.getenv("CSV_DICTIONARY_PATH", "./data/articles_dictionary.csv")
+BRAND_GROUPS_PATH = os.getenv("BRAND_GROUPS_PATH", "./data/brand_groups.json")
 CACHE_DIR = os.getenv("CACHE_DIR", "./cache")
 LOG_FILE = os.getenv("LOG_FILE", "./logs/app.log")
 

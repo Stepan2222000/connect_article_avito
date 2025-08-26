@@ -10,9 +10,11 @@ from tqdm.asyncio import tqdm
 
 from ..config import (
     CSV_DICTIONARY_PATH,
+    BRAND_GROUPS_PATH,
     MIN_ARTICLE_LEN_DIGITS,
     MIN_ARTICLE_LEN_ALPHANUM,
 )
+from ..normalizer.brand_groups import BrandGroupMapper
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,9 @@ class CSVDictionaryLoader:
         self.csv_path = Path(csv_path or CSV_DICTIONARY_PATH)
         # Структура: бренд -> множество артикулов  
         self.brand_articles: Dict[str, Set[str]] = {}
+        # Что: система группировки брендов
+        # Зачем: замена синонимов на канонические названия
+        self.brand_mapper = BrandGroupMapper(BRAND_GROUPS_PATH)
         # Статистика
         self.stats = {
             'total_lines': 0,
@@ -49,6 +54,13 @@ class CSVDictionaryLoader:
         """
         start_time = time.time()
         logger.info(f"Начало загрузки CSV из {self.csv_path}")
+        
+        # Что: загружаем конфигурацию групп брендов
+        # Зачем: для замены синонимов на канонические названия
+        try:
+            self.brand_mapper.load_groups()
+        except Exception as e:
+            logger.warning(f"Не удалось загрузить группы брендов: {e}")
         
         # Проверка файла
         if not self.csv_path.exists():
@@ -125,15 +137,19 @@ class CSVDictionaryLoader:
         article = parts[1].strip()
         brand = parts[2].strip().upper()
         
+        # Что: применяем группировку брендов (замена синонимов)
+        # Зачем: LYNX -> BRP, CANAM -> BRP и т.д.
+        canonical_brand = self.brand_mapper.map_brand(brand)
+        
         # Валидация артикула
         if not self._validate_article(article):
             return
         
-        # Добавляем в словарь
-        if brand not in self.brand_articles:
-            self.brand_articles[brand] = set()
+        # Добавляем в словарь с каноническим брендом
+        if canonical_brand not in self.brand_articles:
+            self.brand_articles[canonical_brand] = set()
         
-        self.brand_articles[brand].add(article)
+        self.brand_articles[canonical_brand].add(article)
         self.stats['valid_articles'] += 1
     
     def _validate_article(self, article: str) -> bool:
