@@ -1,0 +1,17 @@
+# Core dependencies - максимальные версии
+asyncpg>=0.30.0  # Асинхронная работа с PostgreSQL
+pyahocorasick>=2.1.0  # Алгоритм Aho-Corasick для поиска паттернов
+tqdm>=4.67.1  # Прогресс-бар для отображения процесса
+python-dotenv>=1.1.1  # Загрузка конфигурации из .env файла
+aiofiles>=24.1.0  # Асинхронная работа с файлами
+
+# Development dependencies
+pytest>=8.3.5  # Тестирование
+pytest-asyncio>=0.25.2  # Асинхронные тесты
+black>=24.10.0  # Форматирование кода  
+ruff>=0.9.3  # Линтер
+mypy>=1.14.1  # Проверка типов
+
+# Optional performance dependencies
+uvloop>=0.21.0  # Более быстрый event loop для asyncio (Unix/macOS)
+orjson>=3.10.15  # Быстрая работа с JSON
