@@ -14,6 +14,7 @@ from ..config import (
     MIN_ARTICLE_LEN_ALPHANUM,
 )
 from ..normalizer.brand_groups import BrandGroupMapper
+from ..utils.brand_validator import BrandValidator
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +40,17 @@ class CSVDictionaryLoader:
         # Что: система группировки брендов
         # Зачем: замена синонимов на канонические названия
         self.brand_mapper = BrandGroupMapper(BRAND_GROUPS_PATH)
+        # Что: валидатор для фильтрации по списку разрешенных брендов
+        # Зачем: работаем только с нужными брендами
+        self.brand_validator = BrandValidator()
         # Статистика
         self.stats = {
             'total_lines': 0,
             'valid_articles': 0,
             'skipped_empty': 0,
-            'skipped_short': 0
+            'skipped_short': 0,
+            'filter_stats': {}  # Что: статистика фильтрации
+                              # Зачем: понимание эффекта фильтрации
         }
         
     async def load_dictionary(self) -> Dict[str, Set[str]]:
@@ -124,6 +130,23 @@ class CSVDictionaryLoader:
                 f"пропущено_пустых={self.stats['skipped_empty']}, "
                 f"пропущено_коротких={self.stats['skipped_short']}"
             )
+            
+            # Что: фильтруем бренды по списку валидных
+            # Зачем: работаем только с разрешенными брендами
+            logger.info("Начинаем фильтрацию по валидным брендам...")
+            self.brand_articles, filter_stats = self.brand_validator.filter_brand_articles(
+                self.brand_articles
+            )
+            self.stats['filter_stats'] = filter_stats
+            
+            # Что: логируем результат фильтрации
+            # Зачем: понимание эффекта фильтрации
+            if filter_stats.get('filtered', True):
+                logger.info(
+                    f"После фильтрации осталось: "
+                    f"брендов={len(self.brand_articles)}, "
+                    f"артикулов={sum(len(arts) for arts in self.brand_articles.values())}"
+                )
             
         except UnicodeDecodeError as e:
             logger.error(f"Ошибка кодировки при чтении CSV: {e}")

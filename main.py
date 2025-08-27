@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.utils.logging_config import setup_logging
 from src.extractor.engine import run_extraction
 from src.database.connection import db_connection
+from src.config import PROCESSING_LIMIT
 
 # Что: настраиваем логирование при импорте модуля
 # Зачем: логи должны работать сразу
@@ -35,7 +36,7 @@ async def main():
         "--limit",
         type=int,
         default=None,
-        help="Ограничение количества обрабатываемых объявлений (по умолчанию: все)"
+        help="Ограничение количества обрабатываемых объявлений (по умолчанию: из .env или все)"
     )
     
     parser.add_argument(
@@ -108,8 +109,15 @@ async def main():
     # Что: основной режим работы
     # Зачем: запуск полного цикла извлечения артикулов
     try:
+        # Что: определяем финальный лимит
+        # Зачем: приоритет: командная строка -> .env -> без лимита
+        final_limit = args.limit
+        if final_limit is None and PROCESSING_LIMIT > 0:
+            final_limit = PROCESSING_LIMIT
+            logger.info(f"Используется лимит из .env: {final_limit}")
+        
         logger.info("Параметры запуска:")
-        logger.info(f"  - Лимит объявлений: {args.limit or 'без ограничений'}")
+        logger.info(f"  - Лимит объявлений: {final_limit or 'без ограничений'}")
         logger.info(f"  - Кеширование: отключено (всегда строим автоматы заново)")
         logger.info(f"  - Размер батча: {args.batch_size}")
         logger.info("")
@@ -118,7 +126,7 @@ async def main():
         
         # Что: запускаем основную обработку
         # Зачем: извлечение артикулов из объявлений
-        stats = await run_extraction(limit=args.limit)
+        stats = await run_extraction(limit=final_limit)
         
         elapsed = time.time() - start_time
         

@@ -26,11 +26,21 @@ MIN_ARTICLE_LEN_ALPHANUM = int(os.getenv("MIN_ARTICLE_LEN_ALPHANUM", "4"))  # М
 CSV_DICTIONARY_PATH = os.getenv("CSV_DICTIONARY_PATH", "./data/articles_dictionary.csv")
 BRAND_GROUPS_PATH = os.getenv("BRAND_GROUPS_PATH", "./data/brand_groups.json")
 CACHE_DIR = os.getenv("CACHE_DIR", "./cache")
+
+# Что: список валидных брендов через запятую
+# Зачем: фильтрация для работы только с нужными брендами
+VALID_BRANDS = os.getenv("VALID_BRANDS", "").strip()
+# Что: преобразуем строку в список, если не пустая
+# Зачем: удобнее работать со списком при фильтрации
+VALID_BRANDS_LIST = [b.strip() for b in VALID_BRANDS.split(",") if b.strip()] if VALID_BRANDS else []
 LOG_FILE = os.getenv("LOG_FILE", "./logs/app.log")
 
 # Настройки обработки
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "1000"))
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "8"))
+# Что: лимит на количество обрабатываемых объявлений
+# Зачем: для тестирования и отладки на малых объемах
+PROCESSING_LIMIT = int(os.getenv("PROCESSING_LIMIT", "0"))  # 0 = без лимита
 
 # Логирование
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
