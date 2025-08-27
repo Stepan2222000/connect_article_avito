@@ -215,38 +215,38 @@ class DataRetriever:
         query += " ORDER BY s.id"
         
         try:
-            # Используем курсор для потоковой загрузки
-            cursor = await self.connection.cursor(query, *params)
-            
-            batch = []
-            async for row in cursor:
-                if not self.is_running:
-                    logger.info("Получен сигнал остановки, прерываем загрузку...")
-                    break
+            # Что: начинаем транзакцию для курсора
+            # Зачем: asyncpg требует транзакцию для работы с курсором
+            async with self.connection.transaction():
+                # Используем курсор для потоковой загрузки данных
+                cursor = self.connection.cursor(query, *params)
+                batch = []
+                async for row in cursor:
+                    if not self.is_running:
+                        logger.info("Получен сигнал остановки, прерываем загрузку...")
+                        break
+                        
+                    # Преобразуем Record в словарь
+                    record = dict(row)
+                    batch.append(record)
+                    self.total_processed += 1
                     
-                # Преобразуем Record в словарь
-                record = dict(row)
-                batch.append(record)
-                self.total_processed += 1
+                    # Когда набрали полный батч - отдаём его
+                    if len(batch) >= self.batch_size:
+                        yield batch
+                        # Обновляем прогресс
+                        if progress_bar:
+                            progress_bar.update(len(batch))
+                        # Проверяем память каждые 10000 записей
+                        if self.total_processed % 10000 == 0:
+                            self._log_memory_usage()
+                        batch = []
                 
-                # Когда набрали полный батч - отдаём его
-                if len(batch) >= self.batch_size:
+                # Отдаём последний неполный батч
+                if batch and self.is_running:
                     yield batch
-                    # Обновляем прогресс
                     if progress_bar:
                         progress_bar.update(len(batch))
-                    # Проверяем память каждые 10000 записей
-                    if self.total_processed % 10000 == 0:
-                        self._log_memory_usage()
-                    batch = []
-            
-            # Отдаём последний неполный батч
-            if batch and self.is_running:
-                yield batch
-                if progress_bar:
-                    progress_bar.update(len(batch))
-                    
-            await cursor.close()
                 
         except Exception as e:
             logger.error(f"Ошибка при загрузке данных: {e}")

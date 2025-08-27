@@ -238,3 +238,17 @@ class CascadeSearchEngine:
         )
         
         return result
+    
+    async def search_articles(self, text: str) -> SearchResult:
+        """
+        Асинхронная обертка для основного метода поиска
+        
+        Args:
+            text: нормализованный текст для поиска
+            
+        Returns:
+            SearchResult с найденными артикулами и брендами
+        """
+        # Что: вызываем синхронный метод search
+        # Зачем: для совместимости с асинхронным engine
+        return self.search(text)
